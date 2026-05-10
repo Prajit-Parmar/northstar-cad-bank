@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" ng-app="cadBankApp">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NorthStar CAD Bank</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="BankController as bank" ng-class="{'app-ready': bank.isLoggedIn}">
+  <main class="login-shell" ng-if="!bank.isLoggedIn">
+    <section class="login-art">
+      <div class="brand-mark">N</div>
+      <p class="eyebrow">CAD Digital Banking</p>
+      <h1>NorthStar CAD Bank</h1>
+      <p class="login-copy">A final-year online banking prototype with secure sign-in, biometric access, CAD accounts, cards, transfers, offers, help, and profile management.</p>
+      <div class="login-metrics">
+        <span><strong>5</strong> credit cards</span>
+        <span><strong>2</strong> CAD accounts</span>
+        <span><strong>24/7</strong> help desk</span>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Sign in">
+      <div>
+        <p class="eyebrow">Welcome back</p>
+        <h2>Sign in</h2>
+      </div>
+      <form ng-submit="bank.login()" novalidate>
+        <label>
+          Customer ID
+          <input type="text" ng-model="bank.loginForm.customerId" autocomplete="username" placeholder="demo@northstar.ca">
+        </label>
+        <label>
+          Password
+          <input type="password" ng-model="bank.loginForm.password" autocomplete="current-password" placeholder="Enter password">
+        </label>
+        <label class="check-row">
+          <input type="checkbox" ng-model="bank.loginForm.remember">
+          <span>Remember this device</span>
+        </label>
+        <p class="form-error" ng-if="bank.loginError">{{ bank.loginError }}</p>
+        <button class="primary-button" type="submit">Login</button>
+      </form>
+      <div class="demo-card">
+        <span>Dummy accounts</span>
+        <div class="demo-account-row" ng-repeat="account in bank.demoAccounts">
+          <strong>{{ account.name }}</strong>
+          <code>{{ account.email }}</code>
+        </div>
+        <small>Password for all accounts: <b>Bank@2026</b></small>
+      </div>
+    </section>
+  </main>
+
+  <section class="app-shell" ng-if="bank.isLoggedIn">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <div class="brand-mark">N</div>
+        <div>
+          <strong>NorthStar</strong>
+          <span>CAD Bank</span>
+        </div>
+      </div>
+      <nav>
+        <button ng-repeat="tab in bank.tabs" ng-click="bank.setTab(tab.id)" ng-class="{active: bank.activeTab === tab.id}">
+          <span>{{ tab.icon }}</span>{{ tab.label }}
+        </button>
+      </nav>
+      <button class="logout-button" ng-click="bank.logout()">Log out</button>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">{{ bank.currentDate }}</p>
+          <h2>{{ bank.pageTitle() }}</h2>
+        </div>
+        <div class="top-actions">
+          <label class="bio-toggle">
+            <input type="checkbox" ng-model="bank.user.biometricEnabled">
+            <span></span>
+            Biometrics
+          </label>
+          <button class="avatar avatar-button" type="button" ng-click="bank.showProfile()" aria-label="Open profile">
+            {{ bank.initials(bank.user.name) }}
+          </button>
+        </div>
+      </header>
+
+      <section class="dashboard-grid" ng-if="bank.activeTab === 'dashboard'">
+        <article class="balance-hero">
+          <div>
+            <p class="eyebrow">Total CAD balance</p>
+            <h1>{{ bank.currency(bank.totalBalance()) }}</h1>
+          </div>
+          <div class="spark-bars" aria-hidden="true">
+            <i ng-repeat="bar in bank.sparkBars" ng-style="{'height': bar + '%'}"></i>
+          </div>
+        </article>
+
+        <article class="account-card" ng-repeat="account in bank.accounts">
+          <span>{{ account.type }}</span>
+          <h3>{{ bank.currency(account.balance) }}</h3>
+          <p>{{ account.number }}</p>
+        </article>
+
+        <article class="credit-card-preview">
+          <div class="card-chip"></div>
+          <p>{{ bank.primaryCard.network }}</p>
+          <h3>{{ bank.primaryCard.name }}</h3>
+          <div class="card-row">
+            <span>{{ bank.primaryCard.number }}</span>
+            <strong>{{ bank.currency(bank.primaryCard.limit) }}</strong>
+          </div>
+        </article>
+
+        <article class="activity-panel">
+          <div class="section-title">
+            <h3>Recent activity</h3>
+            <span>CAD</span>
+          </div>
+          <div class="activity-row" ng-repeat="item in bank.transactions">
+            <div>
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.date }}</span>
+            </div>
+            <b ng-class="{credit: item.amount > 0}">{{ bank.signedCurrency(item.amount) }}</b>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-stack" ng-if="bank.activeTab === 'accounts'">
+        <article class="wide-panel">
+          <div class="section-title">
+            <h3>Checking and savings</h3>
+            <span>{{ bank.currency(bank.totalBalance()) }}</span>
+          </div>
+          <div class="account-table">
+            <div class="table-row table-head">
+              <span>Account</span><span>Number</span><span>Available</span><span>Status</span>
+            </div>
+            <div class="table-row" ng-repeat="account in bank.accounts">
+              <span>{{ account.type }}</span>
+              <span>{{ account.number }}</span>
+              <strong>{{ bank.currency(account.balance) }}</strong>
+              <span class="status-pill">Active</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-stack" ng-if="bank.activeTab === 'cards'">
+        <article class="wide-panel">
+          <div class="section-title">
+            <h3>Your credit card</h3>
+            <span>{{ bank.primaryCard.status }}</span>
+          </div>
+          <div class="credit-card-preview full-card">
+            <div class="card-chip"></div>
+            <p>{{ bank.primaryCard.network }}</p>
+            <h3>{{ bank.primaryCard.name }}</h3>
+            <div class="card-row">
+              <span>{{ bank.primaryCard.number }}</span>
+              <strong>{{ bank.currency(bank.primaryCard.balance) }}</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-stack" ng-if="bank.activeTab === 'transfers'">
+        <article class="wide-panel">
+          <div class="section-title">
+            <h3>E-Transfer</h3>
+            <span>{{ bank.transferMode }}</span>
+          </div>
+          <div class="segmented">
+            <button ng-click="bank.transferMode = 'Send'" ng-class="{active: bank.transferMode === 'Send'}">Send</button>
+            <button ng-click="bank.transferMode = 'Receive'" ng-class="{active: bank.transferMode === 'Receive'}">Receive</button>
+          </div>
+          <form class="transfer-form" ng-submit="bank.submitTransfer()">
+            <label>
+              Contact
+              <input type="text" ng-model="bank.transfer.contact" placeholder="name@email.com" list="dummy-recipients">
+              <datalist id="dummy-recipients">
+                <option ng-repeat="account in bank.demoAccounts" value="{{ account.email }}">{{ account.name }}</option>
+              </datalist>
+            </label>
+            <label>
+              Amount CAD
+              <input type="text" ng-model="bank.transfer.amount" inputmode="decimal" placeholder="250">
+            </label>
+            <label>
+              Message
+              <input type="text" ng-model="bank.transfer.message" placeholder="Optional note">
+            </label>
+            <button class="primary-button" type="submit">{{ bank.transferMode }} transfer</button>
+          </form>
+          <p class="success-note" ng-if="bank.transferNotice">{{ bank.transferNotice }}</p>
+        </article>
+      </section>
+
+      <section class="offers-grid" ng-if="bank.activeTab === 'offers'">
+        <article class="offer-card" ng-repeat="card in bank.offerCards">
+          <span>{{ card.network }}</span>
+          <h3>{{ card.name }}</h3>
+          <p>{{ card.reward }}</p>
+          <div>
+            <strong>{{ card.rate }}</strong>
+            <button ng-click="bank.applyCard(card)">Sign up</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-stack" ng-if="bank.activeTab === 'help'">
+        <article class="wide-panel">
+          <div class="section-title">
+            <h3>Help centre</h3>
+            <span>Online</span>
+          </div>
+          <div class="help-list">
+            <button ng-repeat="item in bank.helpItems" ng-click="item.open = !item.open">
+              <strong>{{ item.question }}</strong>
+              <p ng-if="item.open">{{ item.answer }}</p>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-stack" ng-if="bank.activeTab === 'profile'">
+        <article class="profile-panel">
+          <div class="profile-hero">
+            <div class="avatar large">{{ bank.initials(bank.user.name) }}</div>
+            <div>
+              <h3>{{ bank.user.name }}</h3>
+              <p>{{ bank.user.email }}</p>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <span>Customer ID<strong>{{ bank.user.customerId }}</strong></span>
+            <span>Phone<strong>{{ bank.user.phone }}</strong></span>
+            <span>Address<strong>{{ bank.user.address }}</strong></span>
+            <span>Biometric login<strong>{{ bank.user.biometricEnabled ? 'Enabled' : 'Disabled' }}</strong></span>
+          </div>
+        </article>
+      </section>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
